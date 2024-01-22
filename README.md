@@ -3,29 +3,16 @@
 
 <!-- NAME -->
 # NAME
-**Template-Project-Implementation** 
+**Manage-Teams-Updates** 
 
 <!-- ABSTRACT -->
 ## ABSTRACT 
-Short description
+This script manages Microsoft Teams updates by renaming update.exe and squirrel.exe, and updating the shortcut.
 
 <!-- ABOUT THE PROJECT -->
 ## DESCRIPTION
-Long description
-
-* What is it ?
-    - Interactive script : 
-    - Cmdlet script :
-    
-* Who is it for ?
-    - IT Support
-    - Power User
-    
- * Why to use it ? 
-    - Make your IT life easier
-    
- * When to use it ?
-    - When you want save time
+The script renames the update.exe and squirrel.exe files in the Microsoft Teams directory
+and updates the shortcut target path to point to the renamed update.exe.
     
  <p align="right">(<a href="#readme-top">back to top</a>)</p>
  
