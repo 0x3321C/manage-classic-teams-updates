@@ -3,7 +3,7 @@
 
 <!-- NAME -->
 # NAME
-**Manage-Teams-Updates** 
+**Manage-Classic-Teams-Updates** 
 
 <!-- ABSTRACT -->
 ## ABSTRACT 
