@@ -7,7 +7,7 @@
 
 <!-- ABSTRACT -->
 ## ABSTRACT 
-This script manages Microsoft Teams updates by renaming update.exe and squirrel.exe, and updating the shortcut.
+This script manages Classic Microsoft Teams updates by renaming update.exe and squirrel.exe, and updating the shortcut.
 
 <!-- ABOUT THE PROJECT -->
 ## DESCRIPTION
