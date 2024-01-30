@@ -2,7 +2,7 @@
 <a name="readme-top"></a>
 
 <!-- NAME -->
-# Manage Teams Updates
+# Manage classic Teams Updates
 **Script to manage MS Teams classic updates** 
 
 <!-- ABSTRACT -->
