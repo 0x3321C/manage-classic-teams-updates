@@ -41,11 +41,11 @@ Get information about
     ```
 ### Installation
 
-1. Open a PowerShell prompt with eleveted permissions
-2. Set the PowerShell execution policies for Windows computers to Unrestricted
-3. Download the archive of the project
-4. Extract the content of the archive
+Here a some options to install the script and run it
 
+1. Set up a Scheduled Task for Windows
+2. Set up a Configuration Item for SCCM
+3. Set up a Logon Script for GPO
 
  <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
