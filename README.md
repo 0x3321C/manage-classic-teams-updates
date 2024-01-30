@@ -3,11 +3,11 @@
 
 <!-- NAME -->
 # Manage Teams Updates
-**Script to manage classic Teams updates** 
+**Script to manage MS Teams classic updates** 
 
 <!-- ABSTRACT -->
 ## ABSTRACT 
-This script manages Classic Microsoft Teams updates by renaming update.exe and squirrel.exe, and updating the shortcut.
+This script manages Microsoft Teams Classic updates by renaming update.exe and squirrel.exe, and updating the shortcut.
 
 <!-- ABOUT THE PROJECT -->
 ## DESCRIPTION
@@ -78,7 +78,6 @@ Distributed under the  Unlicense license. See `LICENSE` for more information.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
  
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTACT -->
 ## CONTACT
