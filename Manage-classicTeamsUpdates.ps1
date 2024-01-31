@@ -1,23 +1,26 @@
 ﻿<#
 .SYNOPSIS
-This script manages Microsoft Teams classic updates by renaming update.exe and squirrel.exe, and updating the shortcut.
+This script manages Microsoft Teams updates by renaming update.exe and squirrel.exe, and updating the shortcut.
 
 .DESCRIPTION
-The script renames the update.exe and squirrel.exe files in the Microsoft Teams classic directory
+The script renames the update.exe and squirrel.exe files in the Microsoft Teams directory
 and updates the shortcut target path to point to the renamed update.exe.
+
+If at least one of the specified shortcuts exists, it updates the current existing shortcut.
+Otherwise, it creates a new shortcut.
 
 .NOTES
 File Name      : Manage-classicTeamsUpdates.ps1
 Author         : 361b3rn3@github
 Prerequisite   : PowerShell
-Version        : 3.0
+Version        : 4.0
 #>
 
 # Function to log messages
 function Log-Message {
     param (
         [string]$message,
-        [string]$logFile = "C:\Path\To\Log\classicTeamsUpdate.log"
+        [string]$logFile = "C:\Path\To\Log\Manage-classic-Teams-Updates.log"
     )
 
     # Create the log directory if it doesn't exist
@@ -57,7 +60,7 @@ RenameAndCheckFile -filePath $teamsUpdatePath -backupSuffix (Get-Date -Format 'y
 $teamsSquirrelPath = "$env:LOCALAPPDATA\Microsoft\Teams\current\squirrel.exe"
 RenameAndCheckFile -filePath $teamsSquirrelPath -backupSuffix (Get-Date -Format 'yyyyMMddHHmmss')
 
-# Step 3: Update shortcut target path
+# Step 3: Update or create shortcut
 $shortcutPaths = @(
     "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Teams.lnk",
     "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Microsoft Teams classic.lnk",
@@ -66,18 +69,34 @@ $shortcutPaths = @(
 
 $newTargetPath = "$env:LOCALAPPDATA\Microsoft\Teams\current\teams.exe"
 
-# Check if the shortcut exists before updating
+# Check if at least one shortcut exists before updating
+$shortcutExists = $false
 foreach ($shortcutPath in $shortcutPaths) {
     if (Test-Path $shortcutPath -PathType Leaf) {
-        try {
-            $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
-            $shortcut.TargetPath = $newTargetPath
-            $shortcut.Save()
-            Log-Message "$($shortcutPath.Split('\')[-1]) updated to point to $($newTargetPath.Split('\')[-1])"
-        } catch {
-            Log-Message "Error updating $($shortcutPath.Split('\')[-1]): $_"
-        }
-    } else {
-        Log-Message "$($shortcutPath.Split('\')[-1]) not found. Skipping update."
+        $shortcutExists = $true
+        break
+    }
+}
+
+if ($shortcutExists) {
+    # Update the current existing shortcut
+    try {
+        $shortcutPath = $shortcutPaths | Where-Object { Test-Path $_ -PathType Leaf }
+        $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
+        $shortcut.TargetPath = $newTargetPath
+        $shortcut.Save()
+        Log-Message "$($shortcutPath.Split('\')[-1]) updated to point to $($newTargetPath.Split('\')[-1])"
+    } catch {
+        Log-Message "Error updating $($shortcutPath.Split('\')[-1]): $_"
+    }
+} else {
+    # Create a new shortcut if none exist
+    try {
+        $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPaths[0])
+        $shortcut.TargetPath = $newTargetPath
+        $shortcut.Save()
+        Log-Message "$($shortcutPaths[0].Split('\')[-1]) created and set to $($newTargetPath.Split('\')[-1])"
+    } catch {
+        Log-Message "Error creating $($shortcutPaths[0].Split('\')[-1]): $_"
     }
 }
