@@ -1,10 +1,10 @@
-﻿<#
+<#
 .SYNOPSIS
-This script manages Microsoft Teams updates by renaming update.exe and squirrel.exe, and updating the shortcut.
+This script manages Microsoft Teams updates by renaming update.exe and squirrel.exe, updating the shortcut, and removing a specific registry key value.
 
 .DESCRIPTION
-The script renames the update.exe and squirrel.exe files in the Microsoft Teams directory
-and updates the shortcut target path to point to the renamed update.exe.
+The script renames the update.exe and squirrel.exe files in the Microsoft Teams directory,
+updates the shortcut target path to point to the renamed update.exe, and removes a specific registry key value.
 
 If a shortcut with the correct target path already exists, it skips both the update and creation steps.
 
@@ -12,11 +12,11 @@ If a shortcut with the correct target path already exists, it skips both the upd
 File Name      : Manage-classicTeamsUpdates.ps1
 Author         : 0x3M321C@github
 Prerequisite   : PowerShell
-Version        : 5.0.0
+Version        : 5.1.0
 #>
 
 # Function to log messages
-function Write-log {
+function Write-Log {
     param (
         [string]$message,
         [string]$logFile = "C:\temp\log\Manage-classic-Teams-Updates.log"
@@ -43,12 +43,16 @@ function Rename-File {
 
     $backupPath = $filePath -replace '\.exe$', ('_' + $backupSuffix + '.exe')
 
-    if (Test-Path $filePath -PathType Leaf) {
-        Rename-Item -Path $filePath -NewName $backupPath
-        Write-log "$($filePath.Split('\')[-1]) renamed to $($backupPath.Split('\')[-1])"
+    try {
+        if (Test-Path $filePath -PathType Leaf) {
+            Rename-Item -Path $filePath -NewName $backupPath -ErrorAction Stop
+            Write-Log "$($filePath.Split('\')[-1]) renamed to $($backupPath.Split('\')[-1])"
+        } else {
+            Write-Log "$($filePath.Split('\')[-1]) not found. Skipping rename."
+        }
     }
-    else {
-        Write-log "$($filePath.Split('\')[-1]) not found. Skipping rename."
+    catch {
+        Write-Log "Error renaming $($filePath.Split('\')[-1]): $_"
     }
 }
 
@@ -59,27 +63,51 @@ function Test-TargetPath {
         [string]$correctTargetPath
     )
 
-    $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
+    try {
+        $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
 
-    $targetPath=$shortcut.TargetPath 
+        if (Test-Path $shortcutPath -PathType Leaf) {
+            Write-Log "$($shortcutPath.Split('\')[-1]) exists."
 
-    if (Test-Path $shortcutPath -PathType Leaf) {
-       
-        Write-log "$($shortcutPath.Split('\')[-1]) exists."
-
-         return $targetPath -eq $correctTargetPath
-     
+            $targetPath = $shortcut.TargetPath
+            return $targetPath -eq $correctTargetPath
+        }
+        else {
+            Write-Log "$($shortcutPath.Split('\')[-1]) does not exist."
+            $targetPath = ""
+            return $targetPath -eq $correctTargetPath
+        }
     }
-    else {
+    catch {
+        Write-Log "Error accessing shortcut properties: $_"
+        return $false
+    }
+    finally {
+        if ($shortcut -ne $null) {
+            [System.Runtime.Interopservices.Marshal]::ReleaseComObject($shortcut) | Out-Null
+            Remove-Variable -Name shortcut -Force
+        }
+    }
+}
 
-        Write-log "$($shortcutPath.Split('\')[-1]) does not exists"
-        $targetPath = ""
-         return $targetPath -eq $correctTargetPath
-    }  
+# Function to remove a specific registry key value
+function Remove-RegistryValue {
+    param (
+        [string]$keyPath,
+        [string]$valueName
+    )
 
-    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($shortcut)
-    Remove-Variable shortcut
-    #return $targetPath -eq $correctTargetPath
+    try {
+        if (Test-Path $keyPath) {
+            Remove-ItemProperty -Path $keyPath -Name $valueName -ErrorAction Stop
+            Write-Log "Registry key value '$valueName' removed from '$keyPath'"
+        } else {
+            Write-Log "Registry key '$keyPath' not found. Skipping removal of value '$valueName'."
+        }
+    }
+    catch {
+        Write-Log "Error removing registry key value '$valueName' from '$keyPath': $_"
+    }
 }
 
 # Step 1: Rename update.exe
@@ -104,57 +132,57 @@ $correctShortcutExists = $false
 
 foreach ($shortcutPath in $shortcutPaths) {
     $correctShortcutExists = Test-TargetPath -shortcutPath $shortcutPath -correctTargetPath $newTargetPath
-    if ($correctShortcutExists ) {
-        Write-log "The shortcut, $($shortcutPath.Split('\')[-1]) already has a correct target path. Skipping update or creation."
+    if ($correctShortcutExists) {
+        Write-Log "The shortcut, $($shortcutPath.Split('\')[-1]) already has a correct target path. Skipping update or creation."
         Break
     }
 }
 
-
-
 if (-not $correctShortcutExists) {
     # Update or create a new shortcut
-
     try {
         # Attempt to update the current existing shortcut or create a new shortcut
         $existingShortcut = $false
 
         foreach ($shortcutPath in $shortcutPaths) {
-            # Search for existing shortcut
+            # Search for an existing shortcut
             $existingShortcut = Test-Path $shortcutPath -PathType Leaf
             if ($existingShortcut) {
-             
-                Write-log "The shortcut, $($shortcutPath.Split('\')[-1]) should be updated."
+                Write-Log "The shortcut, $($shortcutPath.Split('\')[-1]) should be updated."
 
                 # Update the current existing shortcut
                 $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
                 $shortcut.Arguments = ""
                 $shortcut.TargetPath = $newTargetPath
                 $shortcut.Save()
-                Write-log "$($shortcutPath.Split('\')[-1]) updated to point to $($newTargetPath.Split('\')[-1])"
-                
-                
+                Write-Log "$($shortcutPath.Split('\')[-1]) updated to point to $($newTargetPath.Split('\')[-1])"
                 Break
             }
         }
 
         if (-not $existingShortcut) {   
             # Create a new shortcut if no correct shortcut exists
-            Write-log "No existing shorcut with the target path $($newTargetPath.Split('\')[-1])"
+            Write-Log "No existing shortcut with the target path $($newTargetPath.Split('\')[-1])"
 
             $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPaths[0])
             $shortcut.TargetPath = $newTargetPath
             $shortcut.Save()
-            Write-log "$($shortcutPaths[0].Split('\')[-1]) created and set to $($newTargetPath.Split('\')[-1])"
+            Write-Log "$($shortcutPaths[0].Split('\')[-1]) created and set to $($newTargetPath.Split('\')[-1])"
         }           
-        
     }   
     catch {
-        Write-log "Error updating or creating shortcut, $_ "
+        Write-Log "Error updating or creating shortcut: $_"
     }
     finally {
-        [System.Runtime.Interopservices.Marshal]::ReleaseComObject($shortcut)
-        Remove-Variable shortcut
+        if ($shortcut -ne $null) {
+            [System.Runtime.Interopservices.Marshal]::ReleaseComObject($shortcut) | Out-Null
+            Remove-Variable -Name shortcut -Force
+        }
     }
 }
 
+# Step 4: Remove the specified registry key value
+$registryKeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+$registryValueName = "com.squirrel.Teams.Teams"
+
+Remove-RegistryValue -keyPath $registryKeyPath -valueName $registryValueName
