@@ -8,18 +8,34 @@ updates the shortcut target path to point to the renamed update.exe, and removes
 
 If a shortcut with the correct target path already exists, it skips both the update and creation steps.
 
+.ROLE
+Standard User
+
+.FUNCTIONALITY
+Script ensures teams auto-update is stopped
+
 .NOTES
 File Name      : Manage-classicTeamsUpdates.ps1
-Author         : 0x3M321C@github
-Prerequisite   : PowerShell
-Version        : 5.1.0
+Author         : 0x3321c@github
+Version        : 5.1.1
 #>
+
+#Get environment variables
+$userTempFolder = "$env:TEMP"
+$computerName = $env:COMPUTERNAME
+
+#Set Debugging 
+$debugFile = "$userTempFolder\$computerName-Teams.log"
+
+#Set Timing
+$datestamp = Get-Date -Format 'yyyy-MM-dd'
 
 # Function to log messages
 function Write-Log {
     param (
         [string]$message,
-        [string]$logFile = "C:\temp\log\Manage-classic-Teams-Updates.log"
+        [string]$type = "Info",
+        [string]$logFile = "$userTempFolder\$computerName-Teams.log"
     )
 
     # Create the log directory if it doesn't exist
@@ -30,7 +46,7 @@ function Write-Log {
 
     # Log the message to the file
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $logEntry = "$timestamp - $message"
+    $logEntry = "$timestamp [$type] - $message"
     Add-Content -Path $logFile -Value $logEntry
 }
 
@@ -109,6 +125,9 @@ function Remove-RegistryValue {
         Write-Log "Error removing registry key value '$valueName' from '$keyPath': $_"
     }
 }
+
+# Step 0: Create the log file
+Write-Log  "### Manage-classic-Teams-Updates-Logging ###"
 
 # Step 1: Rename update.exe
 $teamsUpdatePath = "$env:LOCALAPPDATA\Microsoft\Teams\update.exe"
